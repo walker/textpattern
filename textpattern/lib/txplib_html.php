@@ -1151,7 +1151,7 @@ function popHelp($help_var, $width = 0, $height = 0, $class = 'pophelp')
         return '';
     }
 
-    $ui = sp.href('?', HELP_URL.'?item='.urlencode($help_var).'&language='.urlencode(LANG), array(
+    $ui = sp.href('i', HELP_URL.'?item='.urlencode($help_var).'&language='.urlencode(LANG), array(
         'role'       => 'button',
         'rel'        => 'help',
         'target'     => '_blank',
@@ -1369,6 +1369,10 @@ function pageby_form($event, $val, $step = null)
 function upload_form($label, $pophelp = '', $step, $event, $id = '', $max_file_size = 1000000, $label_id = '', $class = 'upload-form')
 {
     extract(gpsa(array('page', 'sort', 'dir', 'crit', 'search_method')));
+
+    if (is_array($search_method)) {
+        $search_method = join(',', $search_method);
+    }
 
     if (!$label_id) {
         $p_class = 'edit-'.$event.'-upload';

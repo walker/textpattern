@@ -162,7 +162,7 @@ function selectInput($name = '', $array = array(), $value = '', $blank_first = f
         $atts .= ' '.trim($onchange);
     }
 
-    return n.'<select'.$atts.'>'.n.join(n, $out).n.'</select>';
+    return n.'<select'.$atts.'>'.n.join(n, $out).n.'</select>'; // TODO: use jQuery UI selectmenu?
 }
 
 /**
@@ -448,10 +448,11 @@ function radio($name, $value, $checked = true, $id = '', $tabindex = 0)
  * @param  string $class    The HTML class
  * @param  string $fragment A URL fragment added to the form target
  * @param  string $id       The HTML id
+ * @param  string $role     ARIA role name
  * @return string HTML form element
  */
 
-function form($contents, $style = '', $onsubmit = '', $method = 'post', $class = '', $fragment = '', $id = '')
+function form($contents, $style = '', $onsubmit = '', $method = 'post', $class = '', $fragment = '', $id = '', $role = '')
 {
     $action = 'index.php';
 
@@ -470,6 +471,7 @@ function form($contents, $style = '', $onsubmit = '', $method = 'post', $class =
         'class'    => $class,
         'style'    => $style,
         'onsubmit' => $onsubmit,
+        'role'     => $role,
     ));
 }
 

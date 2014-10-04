@@ -42,19 +42,19 @@ if ($event == 'page') {
     ));
 
     switch (strtolower($step)) {
-        case "":
+        case '':
             page_edit();
             break;
-        case "page_edit":
+        case 'page_edit':
             page_edit();
             break;
-        case "page_save":
+        case 'page_save':
             page_save();
             break;
-        case "page_delete":
+        case 'page_delete':
             page_delete();
             break;
-        case "page_new":
+        case 'page_new':
             page_new();
             break;
     }
@@ -118,47 +118,45 @@ function page_edit($message = '')
         $tagbuild_links .= wrapRegion($item[1].'_group', taglinks($tb), $item[1], $item[0], 'page_'.$item[1]);
     }
 
-    echo hed(gTxt('tab_pages'), 1, array('class' => 'txp-heading'));
+    // Pages code columm.
     echo n.tag(
-
-        n.tag(
-            hed(gTxt('tagbuilder'), 2).
-            $tagbuild_links
-        , 'div', array(
-            'id'    => 'tagbuild_links',
-            'class' => 'txp-layout-cell txp-layout-1-4',
-        )).
-
-        n.tag(
-            form(
-                graf($buttons).
-                graf(
-                    tag(gTxt('page_code'), 'label', array('for' => 'html')).
-                    br.'<textarea class="code" id="html" name="html" cols="'.INPUT_LARGE.'" rows="'.TEXTAREA_HEIGHT_LARGE.'" dir="ltr">'.txpspecialchars($html).'</textarea>'
-                ).
-                graf(
-                    fInput('submit', '', gTxt('save'), 'publish').
-                    eInput('page').sInput('page_save').
-                    hInput('name', $name)
-                )
-            , '', '', 'post', 'edit-form', '', 'page_form')
-        , 'div', array(
-            'id'    => 'main_content',
-            'class' => 'txp-layout-cell txp-layout-2-4',
-        )).
-
-        n.tag(
-            graf(sLink('page', 'page_new', gTxt('create_new_page')), ' class="action-create"').
-            page_list($name).
-        n, 'div', array(
-            'id'    => 'content_switcher',
-            'class' => 'txp-layout-cell txp-layout-1-4',
-        )).n
-
+        hed(gTxt('tab_pages'), 1, array('class' => 'txp-heading')).
+        form(
+            graf($buttons).
+            graf(
+                tag(gTxt('page_code'), 'label', array('for' => 'html')).
+                br.'<textarea class="code" id="html" name="html" cols="'.INPUT_LARGE.'" rows="'.TEXTAREA_HEIGHT_LARGE.'" dir="ltr">'.txpspecialchars($html).'</textarea>'
+            ).
+            graf(
+                fInput('submit', '', gTxt('save'), 'publish').
+                eInput('page').sInput('page_save').
+                hInput('name', $name)
+            )
+        , '', '', 'post', 'edit-form', '', 'page_form')
     , 'div', array(
-        'id'    => $event.'_container',
-        'class' => 'txp-layout-grid'
+        'role'  => 'region',
+        'id'    => 'main_content',
+        'class' => 'txp-layout-4col-cell-1-2-3',
     ));
+
+    // Pages create/switcher column.
+    echo n.tag(
+        graf(sLink('page', 'page_new', gTxt('create_new_page')), ' class="action-create"').
+        page_list($name).
+    n, 'div', array(
+        'role'  => 'region',
+        'id'    => 'content_switcher',
+        'class' => 'txp-layout-4col-cell-4alt',
+    ));
+
+    // Pages tag builder column. TODO: make this a modal?
+//    echo n.tag(
+//        hed(gTxt('tagbuilder'), 2).
+//        $tagbuild_links
+//    , 'div', array(
+//        'id'    => 'tagbuild_links',
+//        'class' => '',
+//    ));
 }
 
 /**

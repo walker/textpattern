@@ -118,47 +118,71 @@ function image_list($message = '')
 
     $switch_dir = ($dir == 'desc') ? 'asc' : 'desc';
 
-    $criteria = 1;
+    $search = new Textpattern_Search_Filter($event,
+        array(
+            'id' => array(
+                'column' => 'txp_image.id',
+                'label'  => gTxt('ID'),
+                'type'   => 'integer',
+            ),
+            'name' => array(
+                'column' => 'txp_image.name',
+                'label'  => gTxt('name'),
+            ),
+            'alt' => array(
+                'column' => 'txp_image.alt',
+                'label'  => gTxt('alt_text'),
+            ),
+            'caption' => array(
+                'column' => 'txp_image.caption',
+                'label'  => gTxt('caption'),
+            ),
+            'category' => array(
+                'column' => array('txp_image.category', 'txp_category.title'),
+                'label'  => gTxt('image_category'),
+            ),
+            'ext' => array(
+                'column' => 'txp_image.ext',
+                'label'  => gTxt('extension'),
+            ),
+            'author' => array(
+                'column' => array('txp_image.author', 'txp_users.RealName'),
+                'label'  => gTxt('author'),
+            ),
+            'thumbnail' => array(
+                'column' => array('txp_image.thumbnail'),
+                'label'  => gTxt('thumbnail'),
+                'type'   => 'boolean',
+            ),
+        )
+    );
 
-    if ($search_method and $crit != '') {
-        $verbatim = preg_match('/^"(.*)"$/', $crit, $m);
-        $crit_escaped = $verbatim ? doSlash($m[1]) : doLike($crit);
-        $critsql = $verbatim ?
-            array(
-                'id'       => "ID in ('" .join("','", do_list($crit_escaped)). "')",
-                'name'     => "name = '$crit_escaped'",
-                'category' => "category = '$crit_escaped'",
-                'author'   => "author = '$crit_escaped'",
-                'alt'      => "alt = '$crit_escaped'",
-                'caption'  => "caption = '$crit_escaped'"
-            ) : array(
-                'id'       => "ID in ('" .join("','", do_list($crit_escaped)). "')",
-                'name'     => "name like '%$crit_escaped%'",
-                'category' => "category like '%$crit_escaped%'",
-                'author'   => "author like '%$crit_escaped%'",
-                'alt'      => "alt like '%$crit_escaped%'",
-                'caption'  => "caption like '%$crit_escaped%'"
-            );
+    $alias_yes = '1, Yes';
+    $alias_no = '0, No';
+    $search->setAliases('thumbnail', array($alias_no, $alias_yes));
 
-        if (array_key_exists($search_method, $critsql)) {
-            $criteria = $critsql[$search_method];
-            $limit = 500;
-        } else {
-            $search_method = '';
-            $crit = '';
-        }
+    list($criteria, $crit, $search_method) = $search->getFilter(array(
+            'id' => array('can_list' => true),
+        ));
+
+    $search_render_options = array(
+        'placeholder' => 'search_images',
+    );
+
+    $sql_from =
+        safe_pfx_j('txp_image')."
+        left join ".safe_pfx_j('txp_category')." on txp_category.name = txp_image.category and txp_category.type = 'image'
+        left join ".safe_pfx_j('txp_users')." on txp_users.name = txp_image.author";
+
+    if ($criteria === 1) {
+        $total = safe_count('txp_image', "$criteria");
     } else {
-        $search_method = '';
-        $crit = '';
+        $total = getThing('select count(*) from '.$sql_from.' where '.$criteria);
     }
-
-    $criteria .= callback_event('admin_criteria', 'image_list', 0, $criteria);
-
-    $total = safe_count('txp_image', "$criteria");
 
     if ($total < 1) {
         if ($criteria != 1) {
-            echo n.image_search_form($crit, $search_method).
+            echo $search->renderForm('image_list', $search_render_options).
                 graf(gTxt('no_results_found'), ' class="indicator"').'</div>';
         } else {
             echo graf(gTxt('no_images_recorded'), ' class="indicator"').'</div>';
@@ -171,16 +195,33 @@ function image_list($message = '')
 
     list($page, $offset, $numPages) = pager($total, $limit, $page);
 
-    echo image_search_form($crit, $search_method);
+    echo $search->renderForm('image_list', $search_render_options);
 
-    $rs = safe_rows_start('*, unix_timestamp(date) as uDate', 'txp_image',
-        "$criteria order by $sort_sql limit $offset, $limit
-    ");
+    $rs = safe_query(
+        "select
+            txp_image.id,
+            txp_image.name,
+            txp_image.category,
+            txp_image.ext,
+            txp_image.w,
+            txp_image.h,
+            txp_image.alt,
+            txp_image.caption,
+            txp_image.date,
+            txp_image.author,
+            txp_image.thumbnail,
+            txp_image.thumb_w,
+            txp_image.thumb_h,
+            txp_users.RealName as realname,
+            txp_category.Title as category_title,
+            unix_timestamp(txp_image.date) as uDate
+        from $sql_from where $criteria order by $sort_sql limit $offset, $limit"
+    );
 
     echo pluggable_ui('image_ui', 'extend_controls', '', $rs);
     echo '</div>'; // End txp-control-panel.
 
-    if ($rs) {
+    if ($rs && numRows($rs)) {
         $show_authors = !has_single_author('txp_image');
 
         echo
@@ -339,22 +380,6 @@ function image_list($message = '')
             n.tag_end('div').
             n.tag_end('div');
     }
-}
-
-// -------------------------------------------------------------
-
-function image_search_form($crit, $method)
-{
-    $methods = array(
-        'id'       => gTxt('ID'),
-        'name'     => gTxt('name'),
-        'category' => gTxt('image_category'),
-        'author'   => gTxt('author'),
-        'alt'      => gTxt('alt_text'),
-        'caption'  => gTxt('caption')
-    );
-
-    return search_form('image', 'image_list', $crit, $methods, $method, 'name');
 }
 
 // -------------------------------------------------------------

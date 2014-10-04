@@ -98,19 +98,19 @@ print <<<eod
 eod;
 
 switch ($step) {
-    case "":
+    case '':
         chooseLang();
         break;
-    case "getDbInfo":
+    case 'getDbInfo':
         getDbInfo();
         break;
-    case "getTxpLogin":
+    case 'getTxpLogin':
         getTxpLogin();
         break;
-    case "printConfig":
+    case 'printConfig':
         printConfig();
         break;
-    case "createTxp":
+    case 'createTxp':
         createTxp();
 }
 ?>
@@ -572,7 +572,7 @@ function createTxp()
     $dbcharset = $txpcfg['dbcharset'];
 
     $siteurl = str_replace("http://", '', $_SESSION['siteurl']);
-    $siteurl = str_replace(' ', '%20', rtrim($siteurl,"/"));
+    $siteurl = rtrim($siteurl, "/");
     $urlpath = preg_replace('#^[^/]+#', '', $siteurl);
 
     define("PFX",trim($dprefix));

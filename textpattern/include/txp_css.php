@@ -156,37 +156,35 @@ function css_edit($message = '')
         $thecss = fetch('css', 'txp_css', 'name', $name);
     }
 
-    echo hed(gTxt('tab_style'), 1, array('class' => 'txp-heading'));
+    // styles code columm.
     echo n.tag(
-        n.tag(
-            form(
-                graf($buttons).
-                graf(
-                    tag(gTxt('css_code'), 'label', array('for' => 'css')).
-                    br.'<textarea class="code" id="css" name="css" cols="'.INPUT_LARGE.'" rows="'.TEXTAREA_HEIGHT_LARGE.'" dir="ltr">'.txpspecialchars($thecss).'</textarea>'
-                ).
-                graf(
-                    fInput('submit', '', gTxt('save'), 'publish').
-                    eInput('css').sInput('css_save').
-                    hInput('name', $name)
-                )
-            , '', '', 'post', 'edit-form', '', 'style_form').n
-        , 'div', array(
-            'id'    => 'main_content',
-            'class' => 'txp-layout-cell txp-layout-3-4',
-        )).
-
-        n.tag(
-            graf(sLink('css', 'pour', gTxt('create_new_css')), array('class' => 'action-create')).
-            css_list($name, $default_name).n
-        , 'div', array(
-            'id'    => 'content_switcher',
-            'class' => 'txp-layout-cell txp-layout-1-4',
-        )).n
-
+        hed(gTxt('tab_style'), 1, array('class' => 'txp-heading')).
+        form(
+            graf($buttons).
+            graf(
+                tag(gTxt('css_code'), 'label', array('for' => 'css')).
+                br.'<textarea class="code" id="css" name="css" cols="'.INPUT_LARGE.'" rows="'.TEXTAREA_HEIGHT_LARGE.'" dir="ltr">'.txpspecialchars($thecss).'</textarea>'
+            ).
+            graf(
+                fInput('submit', '', gTxt('save'), 'publish').
+                eInput('css').sInput('css_save').
+                hInput('name', $name)
+            )
+        , '', '', 'post', 'edit-form', '', 'style_form').n
     , 'div', array(
-        'id'    => $event.'_container',
-        'class' => 'txp-layout-grid',
+        'role'  => 'region',
+        'id'    => 'main_content',
+        'class' => 'txp-layout-4col-cell-1-2-3',
+    ));
+
+    // Styles create/switcher column.
+    echo n.tag(
+        graf(sLink('css', 'pour', gTxt('create_new_css')), array('class' => 'action-create')).
+        css_list($name, $default_name).n
+    , 'div', array(
+        'role'  => 'region',
+        'id'    => 'content_switcher',
+        'class' => 'txp-layout-4col-cell-4alt',
     ));
 }
 

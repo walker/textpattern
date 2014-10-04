@@ -69,36 +69,30 @@ function cat_category_list($message = "")
 {
     pagetop(gTxt('categories'), $message);
     $out = array(hed(gTxt('tab_organise'), 1, 'class="txp-heading"'),
-        '<div id="category_container" class="txp-layout-grid">',
-            n.tag(
-                n.tag(cat_article_list(), 'div', array('class' => 'categories'))
-                , 'div', array(
-                    'id'    => 'categories_article',
-                    'class' => 'txp-layout-cell txp-layout-1-4'
-                )
-            ),
-            n.tag(
-                n.tag(cat_image_list(), 'div', array('class' => 'categories'))
-                , 'div', array(
-                    'id'    => 'categories_image',
-                    'class' => 'txp-layout-cell txp-layout-1-4'
-                )
-            ),
-            n.tag(
-                n.tag(cat_file_list(), 'div', array('class' => 'categories'))
-                , 'div', array(
-                    'id'    => 'categories_file',
-                    'class' => 'txp-layout-cell txp-layout-1-4'
-                )
-            ),
-            n.tag(
-                n.tag(cat_link_list(), 'div', array('class' => 'categories'))
-                , 'div', array(
-                    'id'    => 'categories_link',
-                    'class' => 'txp-layout-cell txp-layout-1-4'
-                )
-            ),
-        '</div>',
+        n.tag(cat_article_list(), 'section', array(
+                'id'    => 'categories_article',
+                'class' => 'txp-layout-4col-cell-1',
+                'role'  => 'region'
+            )
+        ),
+        n.tag(cat_image_list(), 'section', array(
+                'id'    => 'categories_image',
+                'class' => 'txp-layout-4col-cell-2',
+                'role'  => 'region'
+            )
+        ),
+        n.tag(cat_file_list(), 'section', array(
+                'id'    => 'categories_file',
+                'class' => 'txp-layout-4col-cell-3',
+                'role'  => 'region'
+            )
+        ),
+        n.tag(cat_link_list(), 'section', array(
+                'id'    => 'categories_link',
+                'class' => 'txp-layout-4col-cell-4',
+                'role'  => 'region'
+            )
+        ),
         script_js( <<<EOS
             $(document).ready(function ()
             {

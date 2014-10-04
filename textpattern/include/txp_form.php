@@ -75,22 +75,22 @@ if ($event == 'form') {
     ));
 
     switch (strtolower($step)) {
-        case "":
+        case '':
             form_edit();
             break;
-        case "form_edit":
+        case 'form_edit':
             form_edit();
             break;
-        case "form_create":
+        case 'form_create':
             form_create();
             break;
-        case "form_delete":
+        case 'form_delete':
             form_delete();
             break;
-        case "form_multi_edit":
+        case 'form_multi_edit':
             form_multi_edit();
             break;
-        case "form_save":
+        case 'form_save':
             form_save();
             break;
     }
@@ -349,49 +349,47 @@ function form_edit($message = '')
         $tagbuild_links .= wrapRegion($item[1].'_group', popTagLinks($tb), $item[1], $item[0], $item[1]);
     }
 
-    echo hed(gTxt('tab_forms').popHelp('forms_overview'), 1, array('class' => 'txp-heading'));
+    // Forms code columm.
     echo n.tag(
-
-        n.tag(
-            hed(gTxt('tagbuilder'), 2).
-            $tagbuild_links.n
-        , 'div', array(
-            'id'    => 'tagbuild_links',
-            'class' => 'txp-layout-cell txp-layout-1-4',
-        )).
-
-        n.tag(
-            form(
-                graf($name_widgets).
-                graf(
-                    tag(gTxt('form_code'), 'label', array('for' => 'form')).
-                    br.'<textarea class="code" id="form" name="Form" cols="'.INPUT_LARGE.'" rows="'.TEXTAREA_HEIGHT_LARGE.'" dir="ltr">'.txpspecialchars($Form).'</textarea>'
-                ).
-                graf($type_widgets).
-                (empty($type) ? graf(gTxt('only_articles_can_be_previewed')) : '').
-                graf(
-                    fInput('submit', 'save', gTxt('save'), 'publish').
-                    eInput('form').sInput('form_save').
-                    hInput('name', $name)
-                )
-            , '', '', 'post', 'edit-form', '', 'form_form').n
-        , 'div', array(
-            'id'    => 'main_content',
-            'class' => 'txp-layout-cell txp-layout-2-4',
-        )).
-
-        n.tag(
-            graf(sLink('form', 'form_create', gTxt('create_new_form')), ' class="action-create"').
-            form_list($name).n
-        , 'div', array(
-            'id'    => 'content_switcher',
-            'class' => 'txp-layout-cell txp-layout-1-4',
-        )).n
-
+        hed(gTxt('tab_forms').popHelp('forms_overview'), 1, array('class' => 'txp-heading')).
+        form(
+            graf($name_widgets).
+            graf(
+                tag(gTxt('form_code'), 'label', array('for' => 'form')).
+                br.'<textarea class="code" id="form" name="Form" cols="'.INPUT_LARGE.'" rows="'.TEXTAREA_HEIGHT_LARGE.'" dir="ltr">'.txpspecialchars($Form).'</textarea>'
+            ).
+            graf($type_widgets).
+            (empty($type) ? graf(gTxt('only_articles_can_be_previewed')) : '').
+            graf(
+                fInput('submit', 'save', gTxt('save'), 'publish').
+                eInput('form').sInput('form_save').
+                hInput('name', $name)
+            )
+        , '', '', 'post', 'edit-form', '', 'form_form').n
     , 'div', array(
-        'id'    => $event.'_container',
-        'class' => 'txp-layout-grid'
+        'role'  => 'region',
+        'id'    => 'main_content',
+        'class' => 'txp-layout-4col-cell-1-2-3',
     ));
+
+    // Forms create/switcher column.
+    echo n.tag(
+        graf(sLink('form', 'form_create', gTxt('create_new_form')), ' class="action-create"').
+        form_list($name).n
+    , 'div', array(
+        'role'  => 'region',
+        'id'    => 'content_switcher',
+        'class' => 'txp-layout-4col-cell-4alt',
+    ));
+
+    // Forms tag builder column. TODO: make this a modal?
+//    echo n.tag(
+//        hed(gTxt('tagbuilder'), 2).
+//        $tagbuild_links.n
+//    , 'div', array(
+//        'id'    => 'tagbuild_links',
+//        'class' => '',
+//    ));
 }
 
 /**

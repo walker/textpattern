@@ -282,7 +282,7 @@ function change_email_form()
 
 function author_list($message = '')
 {
-    global $txp_user, $author_list_pageby;
+    global $event, $txp_user, $author_list_pageby, $levels;
 
     pagetop(gTxt('tab_site_admin'), $message);
 
@@ -337,45 +337,48 @@ function author_list($message = '')
 
         $switch_dir = ($dir == 'desc') ? 'asc' : 'desc';
 
-        $criteria = 1;
+        $search = new Textpattern_Search_Filter($event,
+            array(
+                'id' => array(
+                    'column' => 'txp_users.user_id',
+                    'label'  => gTxt('ID'),
+                    'type'   => 'integer',
+                ),
+                'login' => array(
+                    'column' => 'txp_users.name',
+                    'label'  => gTxt('name'),
+                ),
+                'RealName' => array(
+                    'column' => 'txp_users.RealName',
+                    'label'  => gTxt('RealName'),
+                ),
+                'email' => array(
+                    'column' => 'txp_users.email',
+                    'label'  => gTxt('email'),
+                ),
+                'privs' => array(
+                    'column' => array('txp_users.privs'),
+                    'label'  => gTxt('privileges'),
+                    'type'   => 'boolean',
+                ),
+            )
+        );
 
-        if ($search_method and $crit != '') {
-            $verbatim = preg_match('/^"(.*)"$/', $crit, $m);
+        $search->setAliases('privs', $levels);
 
-            $crit_escaped = $verbatim ? doSlash($m[1]) : doLike($crit);
-            $critsql = $verbatim ?
-                array(
-                    'id'        => "user_id in ('" .join("','", do_list($crit_escaped)). "')",
-                    'login'     => "name = '$crit_escaped'",
-                    'real_name' => "RealName = '$crit_escaped'",
-                    'email'     => "email = '$crit_escaped'",
-                    'privs'     => "convert(privs, char) in ('" .join("','", do_list($crit_escaped)). "')",
-                ) : array(
-                    'id'        => "user_id in ('" .join("','", do_list($crit_escaped)). "')",
-                    'login'     => "name like '%$crit_escaped%'",
-                    'real_name' => "RealName like '%$crit_escaped%'",
-                    'email'     => "email like '%$crit_escaped%'",
-                    'privs'     => "convert(privs, char) in ('" .join("','", do_list($crit_escaped)). "')",
-                );
+        list($criteria, $crit, $search_method) = $search->getFilter(array(
+                'id' => array('can_list' => true),
+            ));
 
-            if (array_key_exists($search_method, $critsql)) {
-                $criteria = $critsql[$search_method];
-            } else {
-                $search_method = '';
-                $crit = '';
-            }
-        } else {
-            $search_method = '';
-            $crit = '';
-        }
-
-        $criteria .= callback_event('admin_criteria', 'author_list', 0, $criteria);
+        $search_render_options = array(
+            'placeholder' => 'search_users',
+        );
 
         $total = getCount('txp_users', $criteria);
 
         if ($total < 1) {
             if ($criteria != 1) {
-                echo n.author_search_form($crit, $search_method).
+                echo $search->renderForm('author_list', $search_render_options).
                     graf(gTxt('no_results_found'), ' class="indicator"').'</div>';
             }
 
@@ -388,7 +391,7 @@ function author_list($message = '')
 
         $use_multi_edit = ( has_privs('admin.edit') && (safe_count('txp_users', '1=1') > 1) );
 
-        echo author_search_form($crit, $search_method).'</div>';
+        echo $search->renderForm('author_list', $search_render_options).'</div>';
 
         $rs = safe_rows_start(
             '*, unix_timestamp(last_access) as last_login',
@@ -493,26 +496,6 @@ function author_list($message = '')
     } else {
         echo n.tag_end('div');
     }
-}
-
-/**
- * Renders a user search form.
- *
- * @param string $crit   Current search criteria
- * @param string $method Selected search method
- */
-
-function author_search_form($crit, $method)
-{
-    $methods = array(
-        'id'        => gTxt('ID'),
-        'login'     => gTxt('login_name'),
-        'real_name' => gTxt('real_name'),
-        'email'     => gTxt('email'),
-        'privs'     => gTxt('privileges'),
-    );
-
-    return search_form('admin', 'author_list', $crit, $methods, $method, 'login');
 }
 
 /**

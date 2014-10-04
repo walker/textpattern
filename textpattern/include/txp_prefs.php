@@ -41,11 +41,11 @@ if ($event == 'prefs') {
     ));
 
     switch (strtolower($step)) {
-        case "":
-        case "prefs_list":
+        case '':
+        case 'prefs_list':
             prefs_list();
             break;
-        case "prefs_save":
+        case 'prefs_save':
             prefs_save();
             break;
     }

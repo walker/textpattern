@@ -100,42 +100,58 @@ function link_list($message = '')
 
     $switch_dir = ($dir == 'desc') ? 'asc' : 'desc';
 
-    $criteria = 1;
+    $search = new Textpattern_Search_Filter($event,
+        array(
+            'id' => array(
+                'column' => 'txp_link.id',
+                'label'  => gTxt('ID'),
+                'type'   => 'integer',
+            ),
+            'name' => array(
+                'column' => 'txp_link.linkname',
+                'label'  => gTxt('link_name'),
+            ),
+            'url' => array(
+                'column' => 'txp_link.url',
+                'label'  => gTxt('url'),
+            ),
+            'description' => array(
+                'column' => 'txp_link.description',
+                'label'  => gTxt('description'),
+            ),
+            'category' => array(
+                'column' => array('txp_link.category', 'txp_category.title'),
+                'label'  => gTxt('link_category'),
+            ),
+            'author' => array(
+                'column' => array('txp_link.author', 'txp_users.RealName'),
+                'label'  => gTxt('author'),
+            ),
+            'linksort' => array(
+                'column' => 'txp_link.linksort',
+                'label'  => gTxt('link_sort'),
+            ),
+        )
+    );
 
-    if ($search_method and $crit != '') {
-        $verbatim = preg_match('/^"(.*)"$/', $crit, $m);
-        $crit_escaped = $verbatim ? doSlash($m[1]) : doLike($crit);
-        $critsql = $verbatim ?
-            array(
-                'id'          => "ID in ('" .join("','", do_list($crit_escaped)). "')",
-                'name'        => "linkname = '$crit_escaped'",
-                'description' => "description = '$crit_escaped'",
-                'url'         => "url = '$crit_escaped'",
-                'category'    => "category = '$crit_escaped'",
-                'author'      => "author = '$crit_escaped'"
-            ) : array(
-                'id'          => "ID in ('" .join("','", do_list($crit_escaped)). "')",
-                'name'        => "linkname like '%$crit_escaped%'",
-                'description' => "description like '%$crit_escaped%'",
-                'url'         => "url like '%$crit_escaped%'",
-                'category'    => "category like '%$crit_escaped%'",
-                'author'      => "author like '%$crit_escaped%'"
-            );
+    list($criteria, $crit, $search_method) = $search->getFilter(array(
+            'id' => array('can_list' => true),
+        ));
 
-        if (array_key_exists($search_method, $critsql)) {
-            $criteria = $critsql[$search_method];
-        } else {
-            $search_method = '';
-            $crit = '';
-        }
+    $search_render_options = array(
+        'placeholder' => 'search_links',
+    );
+
+    $sql_from =
+        safe_pfx_j('txp_link')."
+        left join ".safe_pfx_j('txp_category')." on txp_category.name = txp_link.category and txp_category.type = 'link'
+        left join ".safe_pfx_j('txp_users')." on txp_users.name = txp_link.author";
+
+    if ($criteria === 1) {
+        $total = safe_count('txp_link', $criteria);
     } else {
-        $search_method = '';
-        $crit = '';
+        $total = getThing('select count(*) from '.$sql_from.' where '.$criteria);
     }
-
-    $criteria .= callback_event('admin_criteria', 'link_list', 0, $criteria);
-
-    $total = getCount('txp_link', $criteria);
 
     echo hed(gTxt('tab_link'), 1, array('class' => 'txp-heading'));
     echo n.'<div id="'.$event.'_control" class="txp-control-panel">';
@@ -148,7 +164,7 @@ function link_list($message = '')
 
     if ($total < 1) {
         if ($criteria != 1) {
-            echo link_search_form($crit, $search_method).
+            echo $search->renderForm('link_list', $search_render_options).
                 graf(gTxt('no_results_found'), ' class="indicator"').'</div>';
         } else {
             echo graf(gTxt('no_links_recorded'), ' class="indicator"').'</div>';
@@ -161,11 +177,25 @@ function link_list($message = '')
 
     list($page, $offset, $numPages) = pager($total, $limit, $page);
 
-    echo link_search_form($crit, $search_method).'</div>';
+    echo $search->renderForm('link_list', $search_render_options).'</div>';
 
-    $rs = safe_rows_start('*, unix_timestamp(date) as uDate', 'txp_link', "$criteria order by $sort_sql limit $offset, $limit");
+    $rs = safe_query(
+        "select
+            txp_link.id,
+            txp_link.linkname,
+            txp_link.url,
+            txp_link.category,
+            txp_link.description,
+            txp_link.linksort,
+            txp_link.date,
+            txp_link.author,
+            txp_users.RealName as realname,
+            txp_category.Title as category_title,
+            unix_timestamp(txp_link.date) as uDate
+        from $sql_from where $criteria order by $sort_sql limit $offset, $limit"
+    );
 
-    if ($rs) {
+    if ($rs && numRows($rs)) {
         $show_authors = !has_single_author('txp_link');
 
         echo
@@ -292,22 +322,6 @@ function link_list($message = '')
             n.tag_end('div').
             n.tag_end('div');
     }
-}
-
-// -------------------------------------------------------------
-
-function link_search_form($crit, $method)
-{
-    $methods = array(
-        'id'          => gTxt('ID'),
-        'name'        => gTxt('link_name'),
-        'description' => gTxt('description'),
-        'url'         => gTxt('url'),
-        'category'    => gTxt('link_category'),
-        'author'      => gTxt('author'),
-    );
-
-    return search_form('link', 'link_list', $crit, $methods, $method, 'name');
 }
 
 // -------------------------------------------------------------
@@ -523,7 +537,7 @@ function link_multi_edit()
     $key = '';
 
     switch ($method) {
-        case 'delete':
+        case 'delete' :
             if (!has_privs('link.delete')) {
                 if (has_privs('link.delete.own')) {
                     $selected = safe_column('id', 'txp_link', 'id IN ('.join(',', $selected).') AND author=\''.doSlash($txp_user).'\'' );

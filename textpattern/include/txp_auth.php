@@ -88,7 +88,7 @@ function doLoginForm($message)
     $out = array();
 
     if ($reset) {
-        $out[] = hed(gTxt('password_reset'), 2, array('id' => 'txp-login-heading')).
+        $out[] = hed(gTxt('password_reset'), 1, array('id' => 'txp-login-heading')).
 
             graf(
                 n.span(tag(gTxt('name'), 'label', array('for' => 'login_name')), array('class' => 'txp-label')).
@@ -105,7 +105,7 @@ function doLoginForm($message)
 
             hInput('p_reset', 1);
     } else {
-        $out[] = hed(gTxt('login_to_textpattern'), 2, array('id' => 'txp-login-heading')).
+        $out[] = hed(gTxt('login_to_textpattern'), 1, array('id' => 'txp-login-heading')).
 
             graf(
                 n.span(tag(gTxt('name'), 'label', array('for' => 'login_name')), array('class' => 'txp-label')).
@@ -137,12 +137,8 @@ function doLoginForm($message)
     }
 
     echo form(
-        tag(join('', $out), 'section', array(
-            'role'            => 'region',
-            'class'           => 'txp-login',
-            'aria-labelledby' => 'txp-login-heading',
-        ))
-    , '', '', 'post', '', '', 'login_form').
+        join('', $out)
+    , '', '', 'post', 'txp-login', '', 'login_form').
 
     script_js('textpattern.textarray = '.json_encode($textarray_script)).
     n.'</main><!-- /txp-body -->'.n.'</body>'.n.'</html>';

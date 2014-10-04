@@ -170,55 +170,79 @@ function discuss_list($message = '')
 
     $switch_dir = ($dir == 'desc') ? 'asc' : 'desc';
 
-    $criteria = 1;
+    $search = new Textpattern_Search_Filter($event,
+        array(
+            'id' => array(
+                'column' => 'txp_discuss.discussid',
+                'label'  => gTxt('ID'),
+                'type'   => 'integer',
+            ),
+            'parent' => array(
+                'column' => array('txp_discuss.parentid', 'textpattern.Title'),
+                'label'  => gTxt('parent'),
+            ),
+            'name' => array(
+                'column' => 'txp_discuss.name',
+                'label'  => gTxt('name'),
+            ),
+            'message' => array(
+                'column' => 'txp_discuss.message',
+                'label'  => gTxt('message'),
+            ),
+            'email' => array(
+                'column' => 'txp_discuss.email',
+                'label'  => gTxt('email'),
+            ),
+            'website' => array(
+                'column' => 'txp_discuss.web',
+                'label'  => gTxt('website'),
+            ),
+            'ip' => array(
+                'column' => 'txp_discuss.ip',
+                'label'  => gTxt('IP'),
+            ),
+            'visible' => array(
+                'column' => 'txp_discuss.visible',
+                'label'  => gTxt('visible'),
+                'type'   => 'numeric',
+            ),
+        )
+    );
 
-    if ($search_method and $crit != '') {
-        $verbatim = preg_match('/^"(.*)"$/', $crit, $m);
-        $crit_escaped = $verbatim ? doSlash($m[1]) : doLike($crit);
-        $critsql = $verbatim ?
-            array(
-                'id'      => "txp_discuss.discussid in ('" .join("','", do_list($crit_escaped)). "')",
-                'parent'  => "txp_discuss.parentid = '$crit_escaped'".((string) intval($crit_escaped) === $crit_escaped ? '' : " or textpattern.Title = '$crit_escaped'"),
-                'name'    => "txp_discuss.name = '$crit_escaped'",
-                'message' => "txp_discuss.message = '$crit_escaped'",
-                'email'   => "txp_discuss.email = '$crit_escaped'",
-                'website' => "txp_discuss.web = '$crit_escaped'",
-                'ip'      => "txp_discuss.ip = '$crit_escaped'",
-            ) : array(
-                'id'      => "txp_discuss.discussid in ('" .join("','", do_list($crit_escaped)). "')",
-                'parent'  => "txp_discuss.parentid = '$crit_escaped'".((string) intval($crit_escaped) === $crit_escaped ? '' : " or textpattern.Title like '%$crit_escaped%'"),
-                'name'    => "txp_discuss.name like '%$crit_escaped%'",
-                'message' => "txp_discuss.message like '%$crit_escaped%'",
-                'email'   => "txp_discuss.email like '%$crit_escaped%'",
-                'website' => "txp_discuss.web like '%$crit_escaped%'",
-                'ip'      => "txp_discuss.ip like '%$crit_escaped%'",
-            );
+    $alias_yes = VISIBLE . ', Yes';
+    $alias_no = MODERATE . ', No, Unmoderated, Pending';
+    $alias_spam = SPAM . ', Spam';
 
-        if (array_key_exists($search_method, $critsql)) {
-            $criteria = $critsql[$search_method];
-            $limit = 500;
-        } else {
-            $search_method = '';
-            $crit = '';
-        }
-    } else {
-        $search_method = '';
-        $crit = '';
-    }
+    $search->setAliases('visible', array(
+        VISIBLE => $alias_yes,
+        MODERATE => $alias_no,
+        SPAM => $alias_spam,
+        ));
 
-    $criteria .= callback_event('admin_criteria', 'discuss_list', 0, $criteria);
+    list($criteria, $crit, $search_method) = $search->getFilter(array(
+            'id' => array('can_list' => true),
+        ));
+
+    $search_render_options = array(
+        'placeholder' => 'search_comments',
+    );
+
+    $sql_from =
+        safe_pfx_j('txp_discuss')."
+        left join ".safe_pfx_j('textpattern')." on txp_discuss.parentid = textpattern.ID";
 
     $counts = getRows(
         "select txp_discuss.visible, COUNT(*) AS c
-        from ".safe_pfx_j('txp_discuss')."
-        left join ".safe_pfx_j('textpattern')." ON txp_discuss.parentid = textpattern.ID
+        from ".$sql_from."
         where {$criteria} group by txp_discuss.visible"
     );
 
     $count[SPAM] = $count[MODERATE] = $count[VISIBLE] = 0;
 
-    if ($counts) foreach ($counts as $c) {
-        $count[$c['visible']] = $c['c'];
+    if ($counts) {
+        foreach ($counts as $c) {
+            $count[$c['visible']] = $c['c'];
+        }
     }
 
     // grand total comment count
@@ -232,7 +256,7 @@ function discuss_list($message = '')
 
     if ($total < 1) {
         if ($criteria != 1) {
-            echo discuss_search_form($crit, $search_method).
+            echo $search->renderForm('discuss_list', $search_render_options).
                 graf(gTxt('no_results_found'), ' class="indicator"').'</div>';
         } else {
             echo graf(gTxt('no_comments_recorded'), ' class="indicator"').'</div>';
@@ -241,7 +265,7 @@ function discuss_list($message = '')
         return;
     }
 
-    echo discuss_search_form($crit, $search_method).'</div>';
+    echo $search->renderForm('discuss_list', $search_render_options).'</div>';
 
     if (!cs('toggle_show_spam')) {
         $total = $count[MODERATE] + $count[VISIBLE];
@@ -268,8 +292,7 @@ function discuss_list($message = '')
         textpattern.Title as title,
         textpattern.Status,
         unix_timestamp(textpattern.Posted) as posted
-        from ".safe_pfx_j('txp_discuss')."
-        left join ".safe_pfx_j('textpattern')." on txp_discuss.parentid = textpattern.ID
+        from ".$sql_from."
         where {$criteria} order by {$sort_sql} limit {$offset}, {$limit}"
     );
 
@@ -443,23 +466,6 @@ function discuss_list($message = '')
             n.tag_end('div').
             n.tag_end('div');
     }
-}
-
-//-------------------------------------------------------------
-
-function discuss_search_form($crit, $method)
-{
-    $methods = array(
-        'id'      => gTxt('ID'),
-        'parent'  => gTxt('parent'),
-        'name'    => gTxt('name'),
-        'message' => gTxt('message'),
-        'email'   => gTxt('email'),
-        'website' => gTxt('website'),
-        'ip'      => gTxt('IP'),
-    );
-
-    return search_form('discuss', 'list', $crit, $methods, $method, 'message');
 }
 
 //-------------------------------------------------------------

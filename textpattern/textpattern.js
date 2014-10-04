@@ -1364,6 +1364,64 @@ $(document).keyup(function (e)
     }
 });
 
+ /**
+ * Search tool.
+ *
+ * @since 4.6.0
+ */
+
+function txp_search()
+{
+    var $ui = $('.txp-search');
+
+    $ui.find('.txp-search-button').button({
+        text: false,
+        icons:
+        {
+            primary: 'ui-icon-search'
+        }
+
+    }).click(function()
+    {
+        $ui.submit();
+    });
+
+    $ui.find('.txp-search-options').button({
+        text: false,
+        icons:
+        {
+            primary: 'ui-icon-triangle-1-s'
+        }
+    }).on('click', function(e)
+    {
+        var menu = $ui.find('.txp-dropdown').toggle().position(
+        {
+            my: "right top",
+            at: "right bottom",
+            of: this
+        });
+        $(document).one('click blur', function ()
+        {
+            menu.hide();
+        });
+
+        return false;
+    });
+
+    $ui.find('.txp-search-buttons').buttonset();
+    $ui.find('.txp-dropdown').hide().menu().click(function(e) {
+        e.stopPropagation();
+    });;
+
+    $ui.txpMultiEditForm({
+        'checkbox'    : 'input[name="search_method[]"][type=checkbox]',
+        'row'         : '.txp-dropdown li',
+        'highlighted' : '.txp-dropdown li',
+        'confirmation': false
+    });
+}
+
+
 /**
  * Cookie status.
  *
@@ -1594,6 +1652,9 @@ $(document).ready(function ()
         }
     });
 
+    // Hide popup elements
+    $('.txp-dropdown').hide();
+
     // Event handling and automation.
     $(document).on('change.txpAutoSubmit', 'form [data-submit-on="change"]', function (e)
     {
@@ -1606,6 +1667,25 @@ $(document).ready(function ()
     $('.txp-datepicker').txpDatepicker();
     $('.txp-sortable').txpSortable();
 
+
+
+    // TODO: integrate jQuery UI stuff ---------------------------
+
+
+    // Selectmenu
+    $('.jquery-ui-selectmenu').selectmenu();
+
+    // Button
+    $('.jquery-ui-button').button();
+
+    // Button set
+    $('.jquery-ui-buttonset').buttonset();
+
+
+    // TODO: end integrate jQuery UI stuff -----------------------
+
+
+
     // Find and open associated dialogs.
     $(document).on('click.txpDialog', '[data-txp-dialog]', function (e)
     {
@@ -1613,7 +1693,7 @@ $(document).ready(function ()
         e.preventDefault();
     });
 
-    // Initialises panel specific JavaScript.
+    // Initialise panel specific JavaScript.
     textpattern.Route.init();
 
     // Arm UI.

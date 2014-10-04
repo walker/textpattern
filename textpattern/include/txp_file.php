@@ -157,41 +157,50 @@ function file_list($message = '')
         $switch_dir = 'desc';
     }
 
-    $criteria = 1;
+    $search = new Textpattern_Search_Filter($event,
+        array(
+            'id' => array(
+                'column' => 'txp_file.id',
+                'label'  => gTxt('ID'),
+                'type'   => 'integer',
+            ),
+            'filename' => array(
+                'column' => 'txp_file.filename',
+                'label'  => gTxt('file_name'),
+            ),
+            'title' => array(
+                'column' => 'txp_file.title',
+                'label'  => gTxt('title'),
+            ),
+            'description' => array(
+                'column' => 'txp_file.description',
+                'label'  => gTxt('description'),
+            ),
+            'category' => array(
+                'column' => array('txp_file.category', 'txp_category.title'),
+                'label'  => gTxt('file_category'),
+            ),
+            'status' => array(
+                'column' => array('txp_file.status'),
+                'label'  => gTxt('status'),
+                'type'   => 'boolean',
+            ),
+            'author' => array(
+                'column' => array('txp_file.author', 'txp_users.RealName'),
+                'label'  => gTxt('author'),
+            ),
+        )
+    );
 
-    if ($search_method && $crit !== '') {
-        $verbatim = preg_match('/^"(.*)"$/', $crit, $m);
-        $crit_escaped = $verbatim ? doSlash($m[1]) : doLike($crit);
-        $critsql = $verbatim ?
-            array(
-                'id'          => "txp_file.id in ('" .join("','", do_list($crit_escaped)). "')",
-                'filename'    => "txp_file.filename = '$crit_escaped'",
-                'title'       => "txp_file.title = '$crit_escaped'",
-                'description' => "txp_file.description = '$crit_escaped'",
-                'category'    => "txp_file.category = '$crit_escaped' or txp_category.title = '$crit_escaped'",
-                'author'      => "txp_file.author = '$crit_escaped' or txp_users.RealName = '$crit_escaped'"
-            ) :    array(
-                'id'          => "txp_file.id in ('" .join("','", do_list($crit_escaped)). "')",
-                'filename'    => "txp_file.filename like '%$crit_escaped%'",
-                'title'       => "txp_file.title like '%$crit_escaped%'",
-                'description' => "txp_file.description like '%$crit_escaped%'",
-                'category'    => "txp_file.category like '%$crit_escaped%' or txp_category.title like '%$crit_escaped%'",
-                'author'      => "txp_file.author like '%$crit_escaped%' or txp_users.RealName like '%$crit_escaped%'"
-            );
+    $search->setAliases('status', $file_statuses);
 
-        if (array_key_exists($search_method, $critsql)) {
-            $criteria = $critsql[$search_method];
-            $limit = 500;
-        } else {
-            $search_method = '';
-            $crit = '';
-        }
-    } else {
-        $search_method = '';
-        $crit = '';
-    }
+    list($criteria, $crit, $search_method) = $search->getFilter(array(
+            'id' => array('can_list' => true),
+        ));
 
-    $criteria .= callback_event('admin_criteria', 'file_list', 0, $criteria);
+    $search_render_options = array(
+        'placeholder' => 'search_files',
+    );
 
     $sql_from =
         safe_pfx_j('txp_file')."
@@ -206,7 +215,7 @@ function file_list($message = '')
 
     if ($total < 1) {
         if ($criteria != 1) {
-            echo file_search_form($crit, $search_method).
+            echo $search->renderForm('file_list', $search_render_options).
                 graf(gTxt('no_results_found'), ' class="indicator"').'</div>';
         } else {
             echo graf(gTxt('no_files_recorded'), ' class="indicator"').'</div>';
@@ -219,7 +228,7 @@ function file_list($message = '')
 
     list($page, $offset, $numPages) = pager($total, $limit, $page);
 
-    echo file_search_form($crit, $search_method).'</div>';
+    echo $search->renderForm('file_list', $search_render_options).'</div>';
 
     $rs = safe_query(
         "select
@@ -440,22 +449,6 @@ function file_list($message = '')
 
 // -------------------------------------------------------------
 
-function file_search_form($crit, $method)
-{
-    $methods = array(
-        'id'          => gTxt('ID'),
-        'filename'    => gTxt('file_name'),
-        'title'       => gTxt('title'),
-        'description' => gTxt('description'),
-        'category'    => gTxt('file_category'),
-        'author'      => gTxt('author'),
-    );
-
-    return search_form('file', 'file_list', $crit, $methods, $method, 'filename');
-}
-
-// -------------------------------------------------------------
-
 function file_multiedit_form($page, $sort, $dir, $crit, $search_method)
 {
     global $file_statuses, $all_file_cats, $all_file_authors;
@@ -531,7 +524,7 @@ function file_multi_edit()
             $key = 'downloads';
             $val = 0;
             break;
-        case 'changestatus':
+        case 'changestatus' :
             $key = 'status';
             $val = ps('status');
 
